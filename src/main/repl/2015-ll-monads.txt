@@ -1,0 +1,268 @@
+| \_\gMONADS FOR THE REST OF US
+| \gFUNCTIONAL BUZZWORD BINGO
+
+| \*\bSTP\s Lambda Lounge\s
+| 18 Mar 2015
+
+| Piotr Limanowski
+| @peel
+
+---
+| \_MONOIDS\s
+
+\*Idea:\s Accumulator
+
+\*Rules:
+  - has a \gzero\s value
+  - combiner function
+  - laws:
+    - identity: x map id = id
+    - composition: x map (a andThen b) = (x map a) x map b
+
+\*Samples:
+  \g+\s  (start: 0; combine: a + b)
+  \g*\s  (start: 1; combine: a * b)
+  \g:::\s (start: Nil; combine: aList ::: bList)
+---
+```
+trait Monoid[T]{
+  def start: T
+  def combine(a:T, b:T): T
+}
+```
+
+--
+```
+class IntAddMonoid extends Monoid[Int]{
+  override def start = 0
+  override def combine(a: Int, b: Int) = a+b
+}
+```
+---
+```
+trait Monoid[T]{
+  def start: T
+  def combine(a:T, b:T): T
+}
+```
+
+```
+class IntMulMonoid extends Monoid[Int]{
+  override def start = 1
+  override def combine(a: Int, b: Int) = a*b
+}
+```
+---
+```
+def combineList[T](items: List[T], monoid: Monoid[T]): T = {
+  if(items.isEmpty){
+    monoid.start
+  }
+  else {
+    var x = items(0)
+    for(i <- 1 to items.size-1){
+      x = monoid.combine(x, items(i))
+    }
+    x
+  }
+}
+```
+
+--
+Split up the problem.
+Parallelize.
+---
+| \_\gFUNCTORS\s
+
+\*Idea:\s Transformer
+
+\*Rules:\s
+  - wraps a type
+  - allows mapping of a function over it's contants
+  - laws:
+    - identity: x map id = id
+    - composition: x map (a andThen b) = (x map a) x map b
+
+\*Samples:\s
+  - Linked list
+  - Option
+---
+```
+trait DeadSimpleList[T]{
+  def map[U](arrow: T => U): DeadSimpleList[U]
+  def isEmpty: Boolean
+  def mkString: String
+}
+```
+--
+
+```
+class DeadSimpleListNil[T] extends DeadSimpleList[T]{
+  override def map[U](arrow: T => U) = new DeadSimpleListNil[U]()
+  override def isEmpty = true
+  override def mkString = "Nil"
+}
+```
+---
+> \gAlgebraic data type\s
+> a composite type formed by
+> combining other types (ie. Option: Some or None)
+---
+```
+trait DeadSimpleList[T]{
+  def map[U](arrow: T => U): DeadSimpleList[U]
+  def isEmpty: Boolean
+  def mkString: String
+}
+```
+
+```
+class DeadSimpleListCons[T] extends DeadSimpleList[T]{
+  override def map[U](arrow: T => U) = ...
+  override def isEmpty = ...
+  override def mkString = ...
+}
+```
+---
+| \gNot just lists.
+
+```
+sealed trait Option[T]{
+    def isDefined: Boolean
+    def map[R](f: (T) => R): Option[R]
+    def dlatMap[R](f: T => Option[R]): Option[R] = if (isDefined) f(this.get) else None
+    def get(): T
+    def getOrElse[R](f : () => R): R = if(isDefined) get() else f
+}
+
+case class Some[T](element: T) extends Option[T]{...}
+case object None extends Option[Nothing]{...}
+```
+---
+| \_\gMONAD\s
+\*Idea:\s abstract wrapper type
+
+\*Rules:\s
+  - zero value
+  - combiner function
+  - laws
+
+\*Samples:\s
+  - Collections
+  - Future
+---
+
+fn: A => Option[B]
+
+[ ] ---------------------> [ ]
+
+         fn
+[A] -> A ---> [ ] -------> [ ]
+
+         fn
+[A] -> A ---> [B] -------> [B]
+
+---
+| \_\gMONAD LAWS\s
+
+| \g\bLEFT IDENTITY
+```
+apply(x) flatMap f = f(x)
+```
+ie. putting x in a monad and flatmapping f on it results in the same as f(x)
+```
+Some(5) flatMap (x => Some(x*2)) == Some(10)
+```
+
+| \g\bRIGHT IDENTITY
+```
+apply(x) flatMap apply = apply(x)
+```
+ie. putting x in a monad, then flatmapping apply results in te same as applying directly
+```
+Some(5) flatMap Option.apply == Some(5)
+```
+
+| \g\bASSOCIATIVITY
+```
+(apply(x) flatMap f) flatMap g = apply(x) flatMap(x=> f(x) flatMap g)
+(Some(5) flatMap (x => Some(x*2))) flatMap (y => Some(y+3)) == Some(5) flatMap (x => Some(x*2) flatMap (y=>Some(y+3)))
+```
+
+---
+```
+val list = List(1,2,3,4,5,6,7,8,9,10)
+
+// sum of squre of even number up to 10
+val total = list.filter(x=>x%2==0).
+             map(x=>x*x).
+             fold(0)((a,b)=>a+b) //monoid!
+
+// sum of all combinations of 1 to 10 times 1 to 10
+val allByAllSum = list.flatMap(i => list.map(j=>i*j)).
+                       fold(0)((a,b)=>a+b)
+List == functor (map) && monad (flatMap)
+```
+---
+```
+val optResult = Option(allByAllSum)
+val doubler = Some(2)
+val notThere = None
+
+val doubleAllByAll = optResult.flatMap(n1 => doubler.map(n2=>n1*n2))
+val noAnswer1 = optTesult.flatMap(n1 => notThere.map(n2=>n1*n2))
+val noAnswer2 = notThere.flatMap(n1 => optResult.map(n2=>n2*n2))
+```
+
+--
+| \*No \rnull\s checking.
+| \*Deal with it.
+---
+| \*\bSYNTACTIC SUGAER
+
+```
+val nums = (1 to 10).toList
+val total = (for{
+    n <- nums if n % 2 == 0
+  } yield n*n).sum
+
+
+val allByAllSum = (for{
+    n1 <- nums
+    n2 <- nums
+  } yield n1*n2).sum
+
+```
+---
+| \g\* FUTURE
+
+```
+val usdQuote=future{connection.getCurrent(USD)}
+val chfQuote=future{connection.getCurrent(CHF)}
+
+val purchase=for{
+    usd <- usdQuote
+    chf <- chfQuote
+    if isProfitable(usd,chf)
+  } yield connection.buy(amount, chf)
+
+
+purchase.onSuccess{
+    case _ => prinltn(s"purchased $amount of CHF")
+  }
+```
+---
+
+Eventually there will be a value.
+Each step gets transformed into a future so doesn't block anywhere.
+
+---
+| \g\*TRY
+
+---
+| \_\gTHANKS.\s
+
+| code/slide:
+| github.com/peel/ll-monads
+
+---
