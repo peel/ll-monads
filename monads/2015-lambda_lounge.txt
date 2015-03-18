@@ -1,0 +1,183 @@
+| MONADS
+
+| Warning: Some samples contain ugly scala code (on purpose though)
+---
+| MONOIDS
+
+Idea: Accumulator
+Rules: 
+  - has a 'zero' value
+  - combiner function
+  - laws:
+    - 
+    - identity function combined with a given monoid returns the monoid
+Samples:
+  +  (start: 0; combine: a + b)
+  *  (start: 1; combine: a * b)
+  ::: (start: Nil; combine: aList ::: bList)
+---
+```
+trait Monoid[T]{
+  def start: T
+  def combine(a:T, b:T): T
+}
+```
+--
+```
+class IntAddMonoid extends Monoid[Int]{
+  override def start = 0
+  override def combine(a: Int, b: Int) = a+b
+}
+```
+---
+```
+trait Monoid[T]{
+  def start: T
+  def combine(a:T, b:T): T
+}
+```
+--
+```
+class IntMulMonoid extends Monoid[Int]{
+  override def start = 1
+  override def combine(a: Int, b: Int) = a*b
+}
+```
+---
+
+```
+def combineList[T](items: List[T], monoid: Monoid[T]): T = {
+  if(items.isEmpty){
+    monoid.start
+  }
+  else {
+    var x = items(0)
+    for(i <- 1 to items.size-1){
+      x = monoid.combine(x, items(i))
+    }
+    x
+  }
+}
+```
+
+Split up the problem.
+Parallelize.
+
+---
+| FUNCTORS
+
+Idea: Transformer
+Rules:
+  wraps a type
+  allows mapping of a function over it's contants
+  identity: x map id = id
+  composition: x map (a andThen b) = (x map a) x map b
+
+Samples:
+  Linked list
+  Option
+---
+```
+trait DeadSimpleList[T]{
+  def map[U](arrow: T => U): DeadSimpleList[U]
+  def isEmpty: Boolean
+  def mkString: String
+}
+```
+--
+```
+class DeadSimpleListNil[T] extends DeadSimpleList[T]{
+  override def map[U](arrow: T => U) = new DeadSimpleListNil[U]()
+  override def isEmpty = true
+  override def mkString = "Nil"
+}
+```
+--
+Algebraic data type - composite type formed by combining other types (ie. Option: Some or None)
+                    - List is kind of similiar
+---
+```
+trait DeadSimpleList[T]{
+  def map[U](arrow: T => U): DeadSimpleList[U]
+  def isEmpty: Boolean
+  def mkString: String
+}
+```
+--
+```
+<<NON EMPTY LIST CONS(TRUCTOR) HERE>>
+class DeadSimpleListCons[T] extends DeadSimpleList[T]{
+  override def map[U](arrow: T => U) =
+  override def isEmpty = 
+  override def mkString =
+}
+```
+--
+---
+Not just lists.
+Option type description
+flatMap/bind!!
+flatMap - part of a monad
+
+---
+flatMap == Monad
+zero value, combiner
+
+state transitions:
+
+fn: A => Option[B]
+
+[ ] ---------------------> [ ]
+
+         fn
+[A] -> A ---> [ ] -------> [ ]
+
+         fn
+[A] -> A ---> [B] -------> [B]
+
+---
+Other samples:
+- Collections
+- Future
+---
+MONAD LAWS
+- apply(x) flatMap f = f(x) // left identity
+  ie. putting x in a monad and flatmapping f on it results in the same as f(x)
+  Some(5) flatMap (x => Some(x*2)) == Some(10)
+- apply(x) flatMap apply = apply(x) // right identity
+  ie. putting x in a monad, then flatmapping apply results in te same as applying directly
+  Some(5) flatMap Option.apply == Some(5)
+- (apply(x) flatMap f) flatMap g = apply(x) flatMap(x=> f(x) flatMap g) //associativity
+  (Some(5) flatMap (x => Some(x*2))) flatMap (y => Some(y+3)) == Some(5) flatMap (x => Some(x*2) flatMap (y=>Some(y+3)))
+---
+SAMPLE
+```
+val list = List(1,2,3,4,5,6,7,8,9,10)
+
+// sum of squre of even number up to 10
+val total = list.filter(x=>x%2==0).
+             map(x=>x*x).
+             fold(0)((a,b)=>a+b) //monoid!
+
+// sum of all combinations of 1 to 10 times 1 to 10
+val allByAllSum = list.flatMap(i => list.map(j=>i*j)).
+                       fold(0)((a,b)=>a+b)
+```
+--
+List == functor (map) && monad (flatMap)
+--
+---
+```
+val optResult = Option(allByAllSum)
+val doubler = Some(2)
+val notThere = None
+
+val doubleAllByAll = optResult.flatMap(n1 => doubler.map(n2=>n1*n2))
+val noAnswer1 = optTesult.flatMap(n1 => notThere.map(n2=>n1*n2))
+val noAnswer2 = notThere.flatMap(n1 => optResult.map(n2=>n2*n2))
+```
+--
+No checking for null. Deal with it.
+--
+---
+
