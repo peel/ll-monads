@@ -194,23 +194,22 @@ Some(5) flatMap Option.apply == Some(5)
 val list = List(1,2,3,4,5,6,7,8,9,10)
 
 // sum of squre of even number up to 10
-val total = list.filter(x=>x%2==0).
-             map(x=>x*x).
-             fold(0)((a,b)=>a+b) //monoid!
+val total = list.filter(x=>x%2==0)
+                .map(x=>x*x)
+                .fold(0)((a,b)=>a+b) //monoid!
 
 // sum of all combinations of 1 to 10 times 1 to 10
-val allByAllSum = list.flatMap(i => list.map(j=>i*j)).
-                       fold(0)((a,b)=>a+b)
-List == functor (map) && monad (flatMap)
+val allByAllSum = list.flatMap(i => list.map(j=>i*j))
+                      .fold(0)((a,b)=>a+b)
 ```
 ---
 ```
 val optResult = Option(allByAllSum)
 val doubler = Some(2)
-val notThere = None
+val notThere: Option[Int] = None
 
 val doubleAllByAll = optResult.flatMap(n1 => doubler.map(n2=>n1*n2))
-val noAnswer1 = optTesult.flatMap(n1 => notThere.map(n2=>n1*n2))
+val noAnswer1 = optResult.flatMap(n1 => notThere.map(n2=>n1*n2))
 val noAnswer2 = notThere.flatMap(n1 => optResult.map(n2=>n2*n2))
 ```
 
@@ -218,7 +217,7 @@ val noAnswer2 = notThere.flatMap(n1 => optResult.map(n2=>n2*n2))
 | \*No \rnull\s checking.
 | \*Deal with it.
 ---
-| \*\bSYNTACTIC SUGAER
+| \*\bSYNTACTIC SUGAR
 
 ```
 val nums = (1 to 10).toList
@@ -252,17 +251,13 @@ purchase.onSuccess{
   }
 ```
 ---
-
-Eventually there will be a value.
-Each step gets transformed into a future so doesn't block anywhere.
-
----
 | \g\*TRY
 
 ---
 | \_\gTHANKS.\s
 
-| code/slide:
+| code/slides:
 | github.com/peel/ll-monads
 
----
+| Piotr Limanowski
+| @peel
